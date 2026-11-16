@@ -1,0 +1,38 @@
+{
+  "id": "back_2",
+  "name": "THE WITCH - BACK 2",
+  "anchorCol": 15,
+  "anchorRow": 15,
+  "keywords": [],
+  "meaning": {
+    "upright": "",
+    "reversed": ""
+  },
+  "pattern": [
+    "...PPPPPPP.....P.",
+    "..P....PPPPP..P..",
+    ".P....P...PPPP...",
+    ".P...P...P.......",
+    "..P.PP.PPPP......",
+    "....PP...PP..P...",
+    "....PP.PPPP......",
+    "....PP...PP..P...",
+    "....PP...PP......",
+    ".....PP.PP...P...",
+    ".....PPP....PPP..",
+    ".......PPPPP.....",
+    ".................",
+    "P..PPP..PP..PP..P",
+    ".PPPPPPPPPPPPPPP.",
+    ".....PP..PP..PP..",
+    ".....PP..PP..PP..",
+    "...PPPP..PP..PP..",
+    "..P..PP..PP..PP..",
+    "...PPPP..PP..PP..",
+    "..P..PP..PP..PP..",
+    ".....PP..PP..PP..",
+    "....PPP.PP...PP..",
+    "...PPPPP.PPPPP...",
+    ".....PP.P.PP....."
+  ]
+}
