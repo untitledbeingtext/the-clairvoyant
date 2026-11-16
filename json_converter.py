@@ -19,12 +19,11 @@ def convert_csv_to_json(
     csv_filename = filename
 
   base_name = os.path.splitext(csv_filename)[0]
+  script_dir = os.path.dirname(os.path.abspath(__file__))
 
-  input_path = os.path.join("csv", csv_filename)
-  output_folder = "data/item"
-  os.makedirs(
-      output_folder, exist_ok=True
-  )
+  input_path = os.path.join(script_dir, "csv", csv_filename)
+  output_folder = os.path.join(script_dir, "data", "major_arcana")
+  os.makedirs(output_folder, exist_ok=True)
 
   if not card_id:
     clean_name = base_name.split("-")[-1].strip()
@@ -53,12 +52,13 @@ def convert_csv_to_json(
   with open(output_path, "w", encoding="utf-8") as json_file:
     json.dump(card_data, json_file, ensure_ascii=False, indent=2)
 
-  print('done')
+  print(f"Exported at {output_path}")
+
 
 convert_csv_to_json(
-    filename="THE WITCH - Bản sao của TITLE",
-    card_id="title",
-    card_name="",
+    filename="THE WITCH - THE DEVIL",
+    card_id="the_devil",
+    card_name="XV. The Devil",
     keywords=[],
     upright="",
     reversed_meaning="",

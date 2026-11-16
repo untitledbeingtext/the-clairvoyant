@@ -1,0 +1,43 @@
+{
+  "id": "the_devil",
+  "name": "XV. The Devil",
+  "anchorCol": 15,
+  "anchorRow": 15,
+  "keywords": [],
+  "meaning": {
+    "upright": "",
+    "reversed": ""
+  },
+  "pattern": [
+    ".P..P..P..P..P..P..P..P..P..P.",
+    "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
+    ".P..........................P.",
+    ".P......P.....PP.....P......P.",
+    "PP...P.P.P.P..PP..P.P.P.P...PP",
+    ".P.P....P.....PP.....P....P.P.",
+    ".P.PP.......PPPPPP.......PP.P.",
+    "PP..PPP.....PPPPPP.....PPP..PP",
+    ".P...PPPP.....PP.....PPPP...P.",
+    ".P......PPPP..PP..PPPP......P.",
+    "PP..P.....PPP....PPP.....P..PP",
+    ".P.P.P.....PPPPPPPP.....P.P.P.",
+    ".P..P....PPP.PPPP.PPP....P..P.",
+    "PP.....P..PP..PP..PP..P.....PP",
+    ".P.P..PPP..P..PP..P..PPP..P.P.",
+    ".P....PPP..PP.PP.PP..PPP....P.",
+    "PP.....P....PPPPPP....P.....PP",
+    ".P...PPPPP..PPPPPP..PPPPP...P.",
+    ".P..P.PPP.P..PPPP..P.PPP.P..P.",
+    "PP.P..PPP..P.PPPP.P..PPP..P.PP",
+    ".P....PPP.....PP.....PPP....P.",
+    ".P...PPPPP..P....P..PP.PP...P.",
+    "PP..P.P.P.P..P..P...PP.PP...PP",
+    ".P..PPPPPPP...PP....PP.PP...P.",
+    ".P...P...P...P..P...P...P...P.",
+    "PP...P...P...P..P...P...P...PP",
+    ".P..PP...PP...PP...PP...PP..P.",
+    ".P..........................P.",
+    "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
+    ".P..P..P..P..P..P..P..P..P..P."
+  ]
+}
