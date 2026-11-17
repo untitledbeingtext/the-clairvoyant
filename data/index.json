@@ -2,7 +2,11 @@
   "palette": [
     {
       "primary": "#4e4035",
-      "secondary": "#8B9E44"
+      "secondary": "#8B9E44",
+      "Y": "#ffe321",
+      "G": "#99af68",
+      "R": "#ff332f",
+      "C": "#f1ede2"
     }
   ],
   "items": {

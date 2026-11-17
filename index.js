@@ -1,6 +1,6 @@
 (async function initPixelTarot() {
   const GRID_SIZE = 8;
-  const LABEL_ROWS = 7;
+  const LABEL_ROWS = 5;
   const LABEL_COLS = 30;
 
   const CARD_COLS = 30;
@@ -11,9 +11,24 @@
 
   const SLOT_COLS = CARD_COLS + SLOT_OFFSET_X * 2;
   const SLOT_ROWS = SLOT_OFFSET_TOP + CARD_ROWS + LABEL_ROWS + SLOT_OFFSET_BOTTOM;
-  const MAX_SLOTS = 5;
+  const TOTAL_SLOTS = 5;
 
-  let paletteList = [{ primary: "#4e4035", secondary: "#8B9E44" }];
+  const COL_GAP = 1;
+  const ROW_GAP = 1;
+
+  document.documentElement.style.overscrollBehavior = "none";
+  document.body.style.overscrollBehavior = "none";
+
+  let paletteList = [
+    {
+      primary: "#4e4035",
+      secondary: "#8B9E44",
+      Y: "#ffe321",
+      G: "#99af68",
+      R: "#ff332f",
+      C: "#f1ede2"
+    }
+  ];
   let cardsList = [];
   let back2Data = null;
   let titleData = null;
@@ -32,6 +47,27 @@
 
   function snapToGrid(value) {
     return Math.round(value / GRID_SIZE) * GRID_SIZE;
+  }
+
+  function getViewportSize() {
+    const width = document.documentElement.clientWidth || window.innerWidth;
+    const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    return { width, height };
+  }
+
+  // overscroll
+  function getClampedScroll() {
+    const { width, height } = getViewportSize();
+    const docWidth = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth, width);
+    const docHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, height);
+
+    const maxScrollX = Math.max(0, docWidth - width);
+    const maxScrollY = Math.max(0, docHeight - height);
+
+    const scrollX = Math.max(0, Math.min(Math.round(window.scrollX), maxScrollX));
+    const scrollY = Math.max(0, Math.min(Math.round(window.scrollY), maxScrollY));
+
+    return { scrollX, scrollY };
   }
 
   // import indexjson
@@ -125,12 +161,55 @@
     return nextIdx;
   }
 
-  //console drag
+  //console drag & center-bottom positioning
   const guideConsole = document.getElementById("guideConsole");
   const consoleToggleBtn = document.getElementById("consoleToggleBtn");
   const consoleCloseBtn = document.getElementById("consoleCloseBtn");
   const consoleAppBtn = document.getElementById("consoleAppBtn");
   const consoleHeader = guideConsole ? guideConsole.querySelector(".console-header") : null;
+
+  let hasUserDraggedConsole = false;
+
+  function centerConsoleBottom() {
+    const { width, height } = getViewportSize();
+
+    if (guideConsole && guideConsole.style.display !== "none" && !hasUserDraggedConsole) {
+      guideConsole.style.maxWidth = `${Math.max(240, width - GRID_SIZE * 2)}px`;
+      guideConsole.style.position = "fixed";
+      guideConsole.style.right = "auto";
+      guideConsole.style.bottom = "auto";
+
+      const boxWidth = guideConsole.offsetWidth;
+      const boxHeight = guideConsole.offsetHeight;
+
+      const targetLeft = snapToGrid(Math.max(GRID_SIZE, (width - boxWidth) / 2));
+      const targetTop = snapToGrid(Math.max(GRID_SIZE, height - boxHeight - GRID_SIZE * 2));
+
+      guideConsole.style.left = `${targetLeft}px`;
+      guideConsole.style.top = `${targetTop}px`;
+    } else if (guideConsole && guideConsole.style.display !== "none" && hasUserDraggedConsole) {
+      const maxLeft = Math.max(0, Math.floor((width - guideConsole.offsetWidth) / GRID_SIZE) * GRID_SIZE);
+      const maxTop = Math.max(0, Math.floor((height - guideConsole.offsetHeight) / GRID_SIZE) * GRID_SIZE);
+      const curLeft = parseInt(guideConsole.style.left, 10) || 0;
+      const curTop = parseInt(guideConsole.style.top, 10) || 0;
+      guideConsole.style.left = `${Math.max(0, Math.min(curLeft, maxLeft))}px`;
+      guideConsole.style.top = `${Math.max(0, Math.min(curTop, maxTop))}px`;
+    }
+
+    if (consoleAppBtn && consoleAppBtn.style.display !== "none") {
+      consoleAppBtn.style.position = "fixed";
+      consoleAppBtn.style.right = "auto";
+      consoleAppBtn.style.bottom = "auto";
+
+      const btnWidth = consoleAppBtn.offsetWidth || 40;
+      const btnHeight = consoleAppBtn.offsetHeight || 40;
+      const targetLeft = snapToGrid(Math.max(GRID_SIZE, (width - btnWidth) / 2));
+      const targetTop = snapToGrid(Math.max(GRID_SIZE, height - btnHeight - GRID_SIZE * 2));
+
+      consoleAppBtn.style.left = `${targetLeft}px`;
+      consoleAppBtn.style.top = `${targetTop}px`;
+    }
+  }
 
   function makeDraggable(targetEl, handleEl, onDragEndCallback) {
     let isDragging = false;
@@ -164,11 +243,12 @@
         hasMoved = true;
       }
 
+      const { width, height } = getViewportSize();
       const snappedLeft = snapToGrid(initialLeft + dx);
       const snappedTop = snapToGrid(initialTop + dy);
 
-      const maxLeft = Math.floor((window.innerWidth - targetEl.offsetWidth) / GRID_SIZE) * GRID_SIZE;
-      const maxTop = Math.floor((window.innerHeight - targetEl.offsetHeight) / GRID_SIZE) * GRID_SIZE;
+      const maxLeft = Math.max(0, Math.floor((width - targetEl.offsetWidth) / GRID_SIZE) * GRID_SIZE);
+      const maxTop = Math.max(0, Math.floor((height - targetEl.offsetHeight) / GRID_SIZE) * GRID_SIZE);
 
       targetEl.style.left = `${Math.max(0, Math.min(snappedLeft, maxLeft))}px`;
       targetEl.style.top = `${Math.max(0, Math.min(snappedTop, maxTop))}px`;
@@ -206,19 +286,19 @@
     let consoleWasDragged = false;
     let appBtnWasDragged = false;
 
-    const initRect = guideConsole.getBoundingClientRect();
-    guideConsole.style.left = `${snapToGrid(initRect.left)}px`;
-    guideConsole.style.top = `${snapToGrid(initRect.top)}px`;
-    guideConsole.style.right = "auto";
-    guideConsole.style.bottom = "auto";
-
-    makeDraggable(guideConsole, consoleHeader, (moved) => { consoleWasDragged = moved; });
-    makeDraggable(consoleAppBtn, consoleAppBtn, (moved) => { appBtnWasDragged = moved; });
+    makeDraggable(guideConsole, consoleHeader, (moved) => {
+      consoleWasDragged = moved;
+      if (moved) hasUserDraggedConsole = true;
+    });
+    makeDraggable(consoleAppBtn, consoleAppBtn, (moved) => {
+      appBtnWasDragged = moved;
+    });
 
     const toggleMinimize = () => {
       const isMinimized = guideConsole.classList.toggle("minimized");
       consoleToggleBtn.textContent = isMinimized ? "+" : "-";
       consoleToggleBtn.title = isMinimized ? "Mở rộng" : "Thu lại";
+      centerConsoleBottom();
     };
 
     consoleToggleBtn.addEventListener("click", (e) => {
@@ -237,17 +317,9 @@
 
     consoleCloseBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const rect = guideConsole.getBoundingClientRect();
       guideConsole.style.display = "none";
-
       consoleAppBtn.style.display = "flex";
-      const maxAppLeft = Math.floor((window.innerWidth - consoleAppBtn.offsetWidth) / GRID_SIZE) * GRID_SIZE;
-      const maxAppTop = Math.floor((window.innerHeight - consoleAppBtn.offsetHeight) / GRID_SIZE) * GRID_SIZE;
-
-      consoleAppBtn.style.left = `${Math.max(GRID_SIZE, Math.min(snapToGrid(rect.left), maxAppLeft))}px`;
-      consoleAppBtn.style.top = `${Math.max(GRID_SIZE, Math.min(snapToGrid(rect.top), maxAppTop))}px`;
-      consoleAppBtn.style.right = "auto";
-      consoleAppBtn.style.bottom = "auto";
+      centerConsoleBottom();
     });
 
     consoleAppBtn.addEventListener("click", (e) => {
@@ -256,18 +328,13 @@
         appBtnWasDragged = false;
         return;
       }
-      const rect = consoleAppBtn.getBoundingClientRect();
       consoleAppBtn.style.display = "none";
       guideConsole.style.display = "block";
-
-      const maxLeft = Math.floor((window.innerWidth - guideConsole.offsetWidth) / GRID_SIZE) * GRID_SIZE;
-      const maxTop = Math.floor((window.innerHeight - guideConsole.offsetHeight) / GRID_SIZE) * GRID_SIZE;
-
-      guideConsole.style.left = `${Math.max(GRID_SIZE, Math.min(snapToGrid(rect.left), maxLeft))}px`;
-      guideConsole.style.top = `${Math.max(GRID_SIZE, Math.min(snapToGrid(rect.top), maxTop))}px`;
-      guideConsole.style.right = "auto";
-      guideConsole.style.bottom = "auto";
+      hasUserDraggedConsole = false;
+      centerConsoleBottom();
     });
+
+    centerConsoleBottom();
   }
 
   const canvas = document.createElement("canvas");
@@ -292,12 +359,13 @@
 
   function updateNoteBounds() {
     if (!noteEl) return;
+    const { scrollX, scrollY } = getClampedScroll();
     const rect = noteEl.getBoundingClientRect();
     webTitleBounds = {
-      minCol: Math.floor((rect.left + window.scrollX) / GRID_SIZE) + 2,
-      maxCol: Math.ceil((rect.right + window.scrollX) / GRID_SIZE) - 2,
-      minRow: Math.floor((rect.top + window.scrollY) / GRID_SIZE) + 2,
-      maxRow: Math.ceil((rect.bottom + window.scrollY) / GRID_SIZE) - 2
+      minCol: Math.floor((rect.left + scrollX) / GRID_SIZE) + 2,
+      maxCol: Math.ceil((rect.right + scrollX) / GRID_SIZE) - 2,
+      minRow: Math.floor((rect.top + scrollY) / GRID_SIZE) + 2,
+      maxRow: Math.ceil((rect.bottom + scrollY) / GRID_SIZE) - 2
     };
   }
 
@@ -317,88 +385,80 @@
     );
   }
 
-  function getViewportSize() {
-    const width = document.documentElement.clientWidth || window.innerWidth;
-    const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    return { width, height };
-  }
-
-  function resizeCanvas() {
-    const dpr = window.devicePixelRatio || 1;
-    const { width, height } = getViewportSize();
-
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    updateNoteBounds();
-  }
-
-  window.addEventListener("resize", resizeCanvas);
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", resizeCanvas);
-  }
-  resizeCanvas();
-
-  function getGridCoords(clientX, clientY) {
-    const pageX = clientX + window.scrollX;
-    const pageY = clientY + window.scrollY;
-    return {
-      col: Math.floor(pageX / GRID_SIZE),
-      row: Math.floor(pageY / GRID_SIZE)
-    };
-  }
-
+  // shrink measurement
   function getCenteredSlotsLayout() {
     const { width, height } = getViewportSize();
     const viewCols = Math.floor(width / GRID_SIZE);
     const viewRows = Math.floor(height / GRID_SIZE);
 
-    const slotCount = Math.max(1, Math.min(MAX_SLOTS, Math.floor(viewCols / SLOT_COLS)));
-    const totalGridCols = slotCount * SLOT_COLS;
-    const totalGridRows = SLOT_ROWS;
+    const widthForCount = (n) => n * SLOT_COLS + (n - 1) * COL_GAP;
 
-    const startCol = Math.max(0, Math.floor((viewCols - totalGridCols) / 2));
-    const startRow = Math.max(0, Math.floor((viewRows - totalGridRows) / 2));
+    let rowDistribution;
+    if (viewCols >= widthForCount(5)) {
+      rowDistribution = [5];
+    } else if (viewCols >= widthForCount(3)) {
+      rowDistribution = [3, 2];
+    } else if (viewCols >= widthForCount(2)) {
+      rowDistribution = [2, 2, 1];
+    } else {
+      rowDistribution = [1, 1, 1, 1, 1];
+    }
+
+    const numRows = rowDistribution.length;
+    const totalGridRows = numRows * SLOT_ROWS + (numRows - 1) * ROW_GAP;
+
+    const minTopMargin = numRows > 1 ? 14 : 0;
+    const startRow = Math.max(minTopMargin, Math.floor((viewRows - totalGridRows) / 2));
+
+    const slots = [];
+    let currentSlotIndex = 0;
+
+    for (let r = 0; r < numRows; r++) {
+      const countInRow = rowDistribution[r];
+      const rowTotalCols = widthForCount(countInRow);
+      const rowStartCol = Math.max(0, Math.floor((viewCols - rowTotalCols) / 2));
+      const rowStartRow = startRow + r * (SLOT_ROWS + ROW_GAP);
+
+      for (let c = 0; c < countInRow; c++) {
+        const minCol = rowStartCol + c * (SLOT_COLS + COL_GAP);
+        const minRow = rowStartRow;
+
+        slots.push({
+          slotIndex: currentSlotIndex,
+          minCol,
+          maxCol: minCol + SLOT_COLS - 1,
+          minRow,
+          maxRow: minRow + SLOT_ROWS - 1
+        });
+        currentSlotIndex++;
+      }
+    }
 
     return {
-      slotCount,
-      startCol,
+      slots,
       startRow,
-      endCol: startCol + totalGridCols - 1,
       endRow: startRow + totalGridRows - 1
     };
   }
 
+  function getSlotByIndex(slotIndex) {
+    const layout = getCenteredSlotsLayout();
+    return layout.slots[slotIndex] || null;
+  }
+
   function getSlotInfo(col, row) {
     const layout = getCenteredSlotsLayout();
-
-    if (
-      col < layout.startCol ||
-      col > layout.endCol ||
-      row < layout.startRow ||
-      row > layout.endRow
-    ) {
-      return null;
+    for (const slot of layout.slots) {
+      if (
+        col >= slot.minCol &&
+        col <= slot.maxCol &&
+        row >= slot.minRow &&
+        row <= slot.maxRow
+      ) {
+        return slot;
+      }
     }
-
-    const slotIndex = Math.floor((col - layout.startCol) / SLOT_COLS);
-    if (slotIndex < 0 || slotIndex >= layout.slotCount) {
-      return null;
-    }
-
-    const minCol = layout.startCol + slotIndex * SLOT_COLS;
-    const minRow = layout.startRow;
-
-    return {
-      slotIndex,
-      minCol,
-      maxCol: minCol + SLOT_COLS - 1,
-      minRow,
-      maxRow: minRow + SLOT_ROWS - 1
-    };
+    return null;
   }
 
   function getCenteredCardAnchorInSlot(slot, card) {
@@ -426,6 +486,70 @@
     const minRow = baseRow - (totalRows - 1);
 
     return { minCol, maxCol, minRow, maxRow, totalCols, totalRows, anchorCol };
+  }
+
+  function syncPlacedCardsToSlots() {
+    for (const card of placedCards) {
+      const slot = getSlotByIndex(card.slotIndex);
+      if (!slot) continue;
+
+      const { baseCol, baseRow } = getCenteredCardAnchorInSlot(slot, card.data);
+      const bounds = getCardBounds(baseCol, baseRow, card.data);
+
+      card.baseCol = baseCol;
+      card.baseRow = baseRow;
+      card.anchorCol = bounds.anchorCol;
+      card.bounds = bounds;
+    }
+  }
+
+  function updateDocumentScrollHeight() {
+    const layout = getCenteredSlotsLayout();
+    const { height } = getViewportSize();
+    // Giới hạn chính xác phạm vi kéo xuống đáy vừa đủ chừa khoảng cho console
+    const requiredHeightPx = (layout.endRow + 12) * GRID_SIZE;
+
+    if (requiredHeightPx > height) {
+      document.documentElement.style.height = `${requiredHeightPx}px`;
+      document.body.style.height = `${requiredHeightPx}px`;
+      document.body.style.minHeight = `${requiredHeightPx}px`;
+    } else {
+      document.documentElement.style.height = "100%";
+      document.body.style.height = "100%";
+      document.body.style.minHeight = "";
+    }
+  }
+
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const { width, height } = getViewportSize();
+
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    updateNoteBounds();
+    updateDocumentScrollHeight();
+    syncPlacedCardsToSlots();
+    centerConsoleBottom();
+  }
+
+  window.addEventListener("resize", resizeCanvas);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", resizeCanvas);
+  }
+  resizeCanvas();
+
+  function getGridCoords(clientX, clientY) {
+    const { scrollX, scrollY } = getClampedScroll();
+    const pageX = clientX + scrollX;
+    const pageY = clientY + scrollY;
+    return {
+      col: Math.floor(pageX / GRID_SIZE),
+      row: Math.floor(pageY / GRID_SIZE)
+    };
   }
 
   function isSlotOccupied(slotIndex) {
@@ -478,7 +602,6 @@
     const { col, row } = getGridCoords(clientX, clientY);
     hoverGridPos = { col, row };
 
-    // Ghi nhận ô grid chuột vừa chạm vào để đổ màu nâu & mờ dần
     if (!isHoveringUI && !isCellInNoteZone(col, row)) {
       hoveredGridCells.set(`${col},${row}`, {
         col,
@@ -540,6 +663,7 @@
       pattern: selectedCard.pattern || [],
       primaryColor: selectedPalette.primary || "#4e4035",
       secondaryColor: selectedPalette.secondary || "#8B9E44",
+      palette: selectedPalette,
       currentRowOffset: 0,
       lastGrowTime: performance.now(),
       growSpeed: 75
@@ -606,30 +730,23 @@
     ctx.restore();
   }
 
+  // placeholder
   function drawSlotGrid(scrollX, scrollY) {
     const layout = getCenteredSlotsLayout();
-
-    const startX = layout.startCol * GRID_SIZE - scrollX;
-    const startY = layout.startRow * GRID_SIZE - scrollY;
-    const totalWidthPx = layout.slotCount * SLOT_COLS * GRID_SIZE;
-    const totalHeightPx = SLOT_ROWS * GRID_SIZE;
 
     ctx.save();
     ctx.strokeStyle = "rgba(78, 64, 53, 0.3)";
     ctx.lineWidth = 1;
-
     ctx.beginPath();
-    for (let i = 0; i <= layout.slotCount; i++) {
-      const x = startX + i * SLOT_COLS * GRID_SIZE;
-      ctx.moveTo(x, startY);
-      ctx.lineTo(x, startY + totalHeightPx);
+
+    for (const slot of layout.slots) {
+      const x = slot.minCol * GRID_SIZE - scrollX;
+      const y = slot.minRow * GRID_SIZE - scrollY;
+      const w = SLOT_COLS * GRID_SIZE;
+      const h = SLOT_ROWS * GRID_SIZE;
+
+      ctx.rect(x, y, w, h);
     }
-
-    ctx.moveTo(startX, startY);
-    ctx.lineTo(startX + totalWidthPx, startY);
-
-    ctx.moveTo(startX, startY + totalHeightPx);
-    ctx.lineTo(startX + totalWidthPx, startY + totalHeightPx);
 
     ctx.stroke();
     ctx.restore();
@@ -770,8 +887,11 @@
     const { width: viewWidth, height: viewHeight } = getViewportSize();
     ctx.clearRect(0, 0, viewWidth, viewHeight);
 
-    const scrollX = Math.round(window.scrollX);
-    const scrollY = Math.round(window.scrollY);
+    // Kẹp chặt scrollX và scrollY trong giới hạn trang để không bị trượt lưới khi kéo quá đáy
+    const { scrollX, scrollY } = getClampedScroll();
+
+    // Khóa đồng bộ vị trí background-position của body với scrollX/scrollY đã kẹp
+    document.body.style.backgroundPosition = `${-scrollX}px ${-scrollY}px`;
 
     //mousepointer
     drawGridHoverTrail(now, viewWidth, viewHeight, scrollX, scrollY);
@@ -817,32 +937,41 @@
             continue;
           }
 
-          ctx.fillStyle = pixelType === "P" ? card.primaryColor : card.secondaryColor;
+          if (pixelType === "P") {
+            ctx.fillStyle = card.primaryColor;
+          } else if (card.palette && card.palette[pixelType]) {
+            ctx.fillStyle = card.palette[pixelType];
+          } else {
+            ctx.fillStyle = card.secondaryColor;
+          }
+
           ctx.fillRect(screenX + 1, screenY + 1, GRID_SIZE - 1, GRID_SIZE - 1);
         }
       }
 
       if (card.name && card.currentRowOffset >= totalRows - 1) {
         const cardCenterX = (card.bounds.minCol + card.bounds.maxCol + 1) * GRID_SIZE * 0.5 - scrollX;
-        const labelCenterY = (card.baseRow + 1 + LABEL_ROWS * 0.5) * GRID_SIZE - scrollY;
+        // Đưa chữ xuống sát đáy vùng label (cách viền đáy khung placeholder 2 ô grid)
+        const labelBottomY = (card.baseRow + 1 + LABEL_ROWS + SLOT_OFFSET_BOTTOM - 2) * GRID_SIZE - scrollY;
         const maxLabelWidth = LABEL_COLS * GRID_SIZE;
 
         if (
           cardCenterX + maxLabelWidth / 2 >= 0 &&
           cardCenterX - maxLabelWidth / 2 <= viewWidth &&
-          labelCenterY + 20 >= 0 &&
-          labelCenterY - 20 <= viewHeight
+          labelBottomY + 20 >= 0 &&
+          labelBottomY - 20 <= viewHeight
         ) {
           ctx.save();
-          ctx.font = "25px 'MedievalSharp', cursive";
+          ctx.font = "26px 'MedievalSharp', cursive";
           ctx.fillStyle = card.primaryColor;
           ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(card.name, cardCenterX, labelCenterY, maxLabelWidth);
+          ctx.textBaseline = "bottom";
+          ctx.fillText(card.name, cardCenterX, labelBottomY, maxLabelWidth);
           ctx.restore();
         }
       }
     }
+
     if (hoverGridPos && !isHoveringUI) {
       const slot = getSlotInfo(hoverGridPos.col, hoverGridPos.row);
 

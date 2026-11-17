@@ -56,9 +56,9 @@ def convert_csv_to_json(
 
 
 convert_csv_to_json(
-    filename="THE WITCH - THE DEVIL",
-    card_id="the_devil",
-    card_name="XV. The Devil",
+    filename="THE WITCH - THE FOOL COLOR",
+    card_id="the_fool_color",
+    card_name="0. The Fool",
     keywords=[],
     upright="",
     reversed_meaning="",
