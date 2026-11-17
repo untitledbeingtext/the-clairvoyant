@@ -12,7 +12,8 @@
   "items": {
     "back_2": "item/back_2.json",
     "mouse_pointer": "item/mouse_pointer.json",
-    "title": "item/title.json"
+    "title": "item/title.json",
+    "title_ver": "item/title_vertical.json"
   },
   "cards": {
     "major_arcana": [

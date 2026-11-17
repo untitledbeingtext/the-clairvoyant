@@ -15,6 +15,7 @@
 
   const COL_GAP = 1;
   const ROW_GAP = 1;
+  const TITLE_MARGIN_GRID = 5;
 
   document.documentElement.style.overscrollBehavior = "none";
   document.body.style.overscrollBehavior = "none";
@@ -32,18 +33,11 @@
   let cardsList = [];
   let back2Data = null;
   let titleData = null;
+  let titleVerticalData = null;
 
   //fade away
   const hoveredGridCells = new Map();
   const TRAIL_FADE_DURATION = 100;
-
-  //if click then fade
-  const titleAnim = {
-    active: true,
-    isFading: false,
-    fadeStartTime: 0,
-    fadeDuration: 1500
-  };
 
   function snapToGrid(value) {
     return Math.round(value / GRID_SIZE) * GRID_SIZE;
@@ -55,7 +49,7 @@
     return { width, height };
   }
 
-  // overscroll
+  // overscroll + grid step snapping
   function getClampedScroll() {
     const { width, height } = getViewportSize();
     const docWidth = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth, width);
@@ -64,13 +58,53 @@
     const maxScrollX = Math.max(0, docWidth - width);
     const maxScrollY = Math.max(0, docHeight - height);
 
-    const scrollX = Math.max(0, Math.min(Math.round(window.scrollX), maxScrollX));
-    const scrollY = Math.max(0, Math.min(Math.round(window.scrollY), maxScrollY));
+    const rawScrollX = Math.max(0, Math.min(window.scrollX, maxScrollX));
+    const rawScrollY = Math.max(0, Math.min(window.scrollY, maxScrollY));
+
+    const scrollX = Math.min(snapToGrid(rawScrollX), maxScrollX);
+    const scrollY = Math.min(snapToGrid(rawScrollY), maxScrollY);
 
     return { scrollX, scrollY };
   }
 
-  // import indexjson
+  // Grid snapping khi dừng scroll
+  let scrollSnapTimer = null;
+  let isSnappingScroll = false;
+
+  function snapWindowScrollToGrid() {
+    const { width, height } = getViewportSize();
+    const docWidth = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth, width);
+    const docHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, height);
+
+    const maxScrollX = Math.max(0, docWidth - width);
+    const maxScrollY = Math.max(0, docHeight - height);
+
+    const currentX = window.scrollX;
+    const currentY = window.scrollY;
+
+    const snappedX = Math.max(0, Math.min(snapToGrid(currentX), maxScrollX));
+    const snappedY = Math.max(0, Math.min(snapToGrid(currentY), maxScrollY));
+
+    if (Math.abs(currentX - snappedX) >= 1 || Math.abs(currentY - snappedY) >= 1) {
+      isSnappingScroll = true;
+      window.scrollTo({
+        left: snappedX,
+        top: snappedY,
+        behavior: "smooth"
+      });
+      setTimeout(() => {
+        isSnappingScroll = false;
+      }, 150);
+    }
+  }
+
+  window.addEventListener("scroll", () => {
+    if (isSnappingScroll) return;
+    clearTimeout(scrollSnapTimer);
+    scrollSnapTimer = setTimeout(snapWindowScrollToGrid, 90);
+  }, { passive: true });
+
+  // import index.json
   try {
     const indexResponse = await fetch("./data/index.json");
 
@@ -91,17 +125,15 @@
         }
       };
 
-      const [loadedBack2, loadedTitle] = await Promise.all([
+      const [loadedBack2, loadedTitle, loadedTitleVer] = await Promise.all([
         fetchItem(itemsConfig.back_2),
-        fetchItem(itemsConfig.title)
+        fetchItem(itemsConfig.title),
+        fetchItem(itemsConfig.title_ver)
       ]);
 
       back2Data = loadedBack2;
       titleData = loadedTitle;
-
-      if (!titleData) {
-        titleAnim.active = false;
-      }
+      titleVerticalData = loadedTitleVer;
 
       const cardsConfig = indexData.cards || {};
       const majorFiles = cardsConfig.major_arcana || [];
@@ -385,6 +417,52 @@
     );
   }
 
+  function getItemMetrics(itemData) {
+    if (!itemData || !itemData.pattern) return null;
+
+    const pattern = itemData.pattern;
+    const totalRows = pattern.length;
+    const totalCols = (pattern[0] && pattern[0].length) || 30;
+
+    let minActiveCol = totalCols;
+    let maxActiveCol = -1;
+    let minActiveRow = totalRows;
+    let maxActiveRow = -1;
+
+    for (let r = 0; r < totalRows; r++) {
+      const rowStr = pattern[r] || "";
+      for (let c = 0; c < rowStr.length; c++) {
+        if (rowStr[c] !== ".") {
+          if (c < minActiveCol) minActiveCol = c;
+          if (c > maxActiveCol) maxActiveCol = c;
+          if (r < minActiveRow) minActiveRow = r;
+          if (r > maxActiveRow) maxActiveRow = r;
+        }
+      }
+    }
+
+    if (maxActiveCol < minActiveCol) return null;
+
+    return {
+      pattern,
+      totalRows,
+      minActiveCol,
+      maxActiveCol,
+      minActiveRow,
+      maxActiveRow,
+      activeWidthCols: maxActiveCol - minActiveCol + 1,
+      activeHeightRows: maxActiveRow - minActiveRow + 1,
+      centerCol: Math.floor((minActiveCol + maxActiveCol) / 2),
+      centerRow: Math.floor((minActiveRow + maxActiveRow) / 2)
+    };
+  }
+
+  function getActiveTitleMetrics(viewWidth) {
+    const isMobile = viewWidth <= 600;
+    const activeTitleData = isMobile && titleVerticalData ? titleVerticalData : titleData;
+    return getItemMetrics(activeTitleData);
+  }
+
   // shrink measurement
   function getCenteredSlotsLayout() {
     const { width, height } = getViewportSize();
@@ -407,7 +485,12 @@
     const numRows = rowDistribution.length;
     const totalGridRows = numRows * SLOT_ROWS + (numRows - 1) * ROW_GAP;
 
-    const minTopMargin = numRows > 1 ? 14 : 0;
+    const titleMetrics = getActiveTitleMetrics(width);
+    const titleHeightRows = titleMetrics ? titleMetrics.activeHeightRows : 0;
+    const minTopMargin = titleHeightRows > 0
+      ? TITLE_MARGIN_GRID + titleHeightRows + TITLE_MARGIN_GRID
+      : 0;
+
     const startRow = Math.max(minTopMargin, Math.floor((viewRows - totalGridRows) / 2));
 
     const slots = [];
@@ -506,7 +589,6 @@
   function updateDocumentScrollHeight() {
     const layout = getCenteredSlotsLayout();
     const { height } = getViewportSize();
-    // Giới hạn chính xác phạm vi kéo xuống đáy vừa đủ chừa khoảng cho console
     const requiredHeightPx = (layout.endRow + 12) * GRID_SIZE;
 
     if (requiredHeightPx > height) {
@@ -590,13 +672,6 @@
     );
   }
 
-  function triggerTitleFade() {
-    if (titleAnim.active && !titleAnim.isFading) {
-      titleAnim.isFading = true;
-      titleAnim.fadeStartTime = performance.now();
-    }
-  }
-
   function handleInteraction(clientX, clientY, targetEl) {
     isHoveringUI = Boolean(isUIElement(targetEl));
     const { col, row } = getGridCoords(clientX, clientY);
@@ -612,7 +687,6 @@
   }
 
   window.addEventListener("mousemove", (e) => {
-    triggerTitleFade();
     handleInteraction(e.clientX, e.clientY, e.target);
   });
 
@@ -621,7 +695,6 @@
   });
 
   window.addEventListener("touchmove", (e) => {
-    triggerTitleFade();
     if (e.touches.length > 0) {
       handleInteraction(e.touches[0].clientX, e.touches[0].clientY, e.target);
     }
@@ -681,7 +754,6 @@
 
   window.addEventListener("touchstart", (e) => {
     lastTouchTime = Date.now();
-    triggerTitleFade();
     if (e.touches.length > 0) {
       handleInteraction(e.touches[0].clientX, e.touches[0].clientY, e.target);
       handlePlaceCard(e.touches[0].clientX, e.touches[0].clientY, e.target);
@@ -752,73 +824,23 @@
     ctx.restore();
   }
 
-  function getItemMetrics(itemData) {
-    if (!itemData || !itemData.pattern) return null;
-
-    const pattern = itemData.pattern;
-    const totalRows = pattern.length;
-    const totalCols = (pattern[0] && pattern[0].length) || 30;
-
-    let minActiveCol = totalCols;
-    let maxActiveCol = -1;
-    let minActiveRow = totalRows;
-    let maxActiveRow = -1;
-
-    for (let r = 0; r < totalRows; r++) {
-      const rowStr = pattern[r] || "";
-      for (let c = 0; c < rowStr.length; c++) {
-        if (rowStr[c] !== ".") {
-          if (c < minActiveCol) minActiveCol = c;
-          if (c > maxActiveCol) maxActiveCol = c;
-          if (r < minActiveRow) minActiveRow = r;
-          if (r > maxActiveRow) maxActiveRow = r;
-        }
-      }
-    }
-
-    if (maxActiveCol < minActiveCol) return null;
-
-    return {
-      pattern,
-      totalRows,
-      minActiveCol,
-      maxActiveCol,
-      minActiveRow,
-      maxActiveRow,
-      activeWidthCols: maxActiveCol - minActiveCol + 1,
-      activeHeightRows: maxActiveRow - minActiveRow + 1,
-      centerCol: Math.floor((minActiveCol + maxActiveCol) / 2),
-      centerRow: Math.floor((minActiveRow + maxActiveRow) / 2)
-    };
-  }
-
-  function drawIntroTitle(now, viewWidth, viewHeight, scrollX, scrollY) {
-    if (!titleAnim.active || !titleData) return;
-
-    let alpha = 1;
-    if (titleAnim.isFading) {
-      const elapsed = now - titleAnim.fadeStartTime;
-      if (elapsed >= titleAnim.fadeDuration) {
-        titleAnim.active = false;
-        return;
-      }
-      alpha = Math.max(0, 1 - elapsed / titleAnim.fadeDuration);
-    }
-
-    const metrics = getItemMetrics(titleData);
+  function drawIntroTitle(viewWidth, viewHeight, scrollX, scrollY) {
+    const metrics = getActiveTitleMetrics(viewWidth);
     if (!metrics) return;
 
     const layout = getCenteredSlotsLayout();
     const viewCols = Math.floor(viewWidth / GRID_SIZE);
 
     const targetCenterCol = Math.floor(viewCols / 2);
-    const targetTopRow = Math.max(2, layout.startRow - metrics.activeHeightRows - 2);
+    const targetTopRow = Math.max(
+      TITLE_MARGIN_GRID,
+      layout.startRow - TITLE_MARGIN_GRID - metrics.activeHeightRows
+    );
 
     const primaryColor = paletteList[0]?.primary || "#4e4035";
     const secondaryColor = paletteList[0]?.secondary || "#8B9E44";
 
     ctx.save();
-    ctx.globalAlpha = alpha;
 
     for (let r = metrics.minActiveRow; r <= metrics.maxActiveRow; r++) {
       const rowStr = metrics.pattern[r];
@@ -887,17 +909,13 @@
     const { width: viewWidth, height: viewHeight } = getViewportSize();
     ctx.clearRect(0, 0, viewWidth, viewHeight);
 
-    // Kẹp chặt scrollX và scrollY trong giới hạn trang để không bị trượt lưới khi kéo quá đáy
     const { scrollX, scrollY } = getClampedScroll();
-
-    // Khóa đồng bộ vị trí background-position của body với scrollX/scrollY đã kẹp
     document.body.style.backgroundPosition = `${-scrollX}px ${-scrollY}px`;
 
-    //mousepointer
     drawGridHoverTrail(now, viewWidth, viewHeight, scrollX, scrollY);
 
     drawSlotGrid(scrollX, scrollY);
-    drawIntroTitle(now, viewWidth, viewHeight, scrollX, scrollY);
+    drawIntroTitle(viewWidth, viewHeight, scrollX, scrollY);
 
     for (const card of placedCards) {
       const pattern = card.pattern;
@@ -951,7 +969,6 @@
 
       if (card.name && card.currentRowOffset >= totalRows - 1) {
         const cardCenterX = (card.bounds.minCol + card.bounds.maxCol + 1) * GRID_SIZE * 0.5 - scrollX;
-        // Đưa chữ xuống sát đáy vùng label (cách viền đáy khung placeholder 2 ô grid)
         const labelBottomY = (card.baseRow + 1 + LABEL_ROWS + SLOT_OFFSET_BOTTOM - 2) * GRID_SIZE - scrollY;
         const maxLabelWidth = LABEL_COLS * GRID_SIZE;
 
