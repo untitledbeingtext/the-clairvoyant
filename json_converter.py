@@ -22,7 +22,7 @@ def convert_csv_to_json(
   script_dir = os.path.dirname(os.path.abspath(__file__))
 
   input_path = os.path.join(script_dir, "csv", csv_filename)
-  output_folder = os.path.join(script_dir, "data", "item")
+  output_folder = os.path.join(script_dir, "data", "major_arcana")
   os.makedirs(output_folder, exist_ok=True)
 
   if not card_id:
@@ -56,9 +56,9 @@ def convert_csv_to_json(
 
 
 convert_csv_to_json(
-    filename="THE WITCH - TITLE RES",
-    card_id="title_vertical",
-    card_name="",
+    filename="THE WITCH - THE EMPRESS",
+    card_id="the_empress",
+    card_name="III. The Empress",
     keywords=[],
     upright="",
     reversed_meaning="",
