@@ -21,7 +21,8 @@
       "major_arcana/the_magician.json",
       "major_arcana/the_high_priestess.json",
       "major_arcana/the_devil.json",
-      "major_arcana/the_empress.json"
+      "major_arcana/the_empress.json",
+      "major_arcana/the_emperor.json"
     ],
     "minor_arcana": {
       "wands": [],

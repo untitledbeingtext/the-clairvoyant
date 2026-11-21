@@ -1,0 +1,43 @@
+{
+  "id": "the_emperor",
+  "name": "IV. The Emperor",
+  "anchorCol": 15,
+  "anchorRow": 15,
+  "keywords": [],
+  "meaning": {
+    "upright": "",
+    "reversed": ""
+  },
+  "pattern": [
+    ".P..P..P..P..P..P..P..P..P..P.",
+    "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
+    ".P..........................P.",
+    ".P.P.P.P..PPPPPPPPPP..P.P.P.P.",
+    "PP..PPP..PP...PP...PP..PPP..PP",
+    ".P.PP.PPPP.PP....PP.PPPP.PP.P.",
+    ".P..PPP......P..P......PPP..P.",
+    "PP.P.P.P......PP......P.P.P.PP",
+    ".P...P...PPP............P...P.",
+    ".P.PP...P..P...PPP.......PP.P.",
+    "PP.P..P.P..P..PP.PPPP.....P.PP",
+    ".P.P...P.PP..PP.PP..PP....P.P.",
+    ".P.P...PP...PP.PP....PP...P.P.",
+    "PP.P..P..P..PPPP..PP..P.....PP",
+    ".P...P......P....P..P.P...P.P.",
+    ".P..P....P..P....P.P..P..PP.P.",
+    "PP.P....P.P.P.P..P...P..P.P.PP",
+    ".P...P...P..P...P.PPP..P.PP.P.",
+    ".P.....P....P..PP.....P.PP..P.",
+    "PP.P..PPP...P..P.....P.PP...PP",
+    ".P.P.PPPPP..P.P...P.P.PPP.P.P.",
+    ".P.PPPPP.PP..PP..PPPPPPP.P..P.",
+    "PP.PPPPP..PP....PP.PPPPP..P.PP",
+    ".P.PPPPP...PP.PPPP..PPP..P..P.",
+    ".P.PPPP.PP..PPPPPPP..PPP....P.",
+    "PP..PP.P.....PPPPPP.PP.PPPP.PP",
+    ".P...P........P.............P.",
+    ".P..........................P.",
+    "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
+    ".P..P..P..P..P..P..P..P..P..P."
+  ]
+}

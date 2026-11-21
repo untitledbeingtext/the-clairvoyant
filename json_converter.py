@@ -56,9 +56,9 @@ def convert_csv_to_json(
 
 
 convert_csv_to_json(
-    filename="THE WITCH - THE EMPRESS",
-    card_id="the_empress",
-    card_name="III. The Empress",
+    filename="THE WITCH - THE EMPEROR",
+    card_id="the_emperor",
+    card_name="IV. The Emperor",
     keywords=[],
     upright="",
     reversed_meaning="",
